@@ -296,9 +296,93 @@ This approach was designed to actively engage with and study cyber attack patter
     
   </details>
 
+**MS SQL Server Authentication Failures**
+<br/>This attack map shows all the attempts threat actors trying to access the Microsoft SQL Database Server within the Windows virtual machine
+<div style="text-align: center;">
+    <img src="https://github.com/user-attachments/assets/23cbf510-93ef-437a-9359-a90292e15f86" alt="before controls" width="500" height="auto">
+</div>
+  <details>
+    <summary>JSON</summary>
 
+    {
+    "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let GeoIPDB = _GetWatchlist(\"geo_ipv4\");\nlet GeoIPDB_cities = _GetWatchlist(\"geo_ipv4_cities\");\nlet GeoIPDB_FULL = GeoIPDB | join kind = leftouter GeoIPDB_cities on geoname_id;\nlet IpAddress_REGEX_PATTERN = @\"\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b\";\n// Brute Force Attempt MS SQL Server\nEvent\n| where EventLog == \"Application\"\n| where EventID == 18456\n| project TimeGenerated, AttackerIP = extract(IpAddress_REGEX_PATTERN, 0, RenderedDescription), DestinationHostName = Computer, RenderedDescription\n| evaluate ipv4_lookup(GeoIPDB_FULL, AttackerIP, network)\n| project TimeGenerated, AttackerIP, DestinationHostName, RenderedDescription, latitude, longitude, subdivision = subdivision_1_name, city = city_name, country = country_name, friendly_location = strcat(city_name, \" (\", country_name, \")\");",
+        "size": 3,
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "map",
+        "mapSettings": {
+          "locInfo": "LatLong",
+          "locInfoColumn": "country_name",
+          "latitude": "latitude",
+          "longitude": "longitude",
+          "sizeSettings": "latitude",
+          "sizeAggregation": "Count",
+          "opacity": 0.8,
+          "labelSettings": "friendly_location",
+          "legendMetric": "friendly_location",
+          "legendAggregation": "Count",
+          "itemColorSettings": {
+            "nodeColorField": "latitude",
+            "colorAggregation": "Sum",
+            "type": "heatmap",
+            "heatmapPalette": "greenRed"
+          }
+        }
+      },
+      "name": "query - 0
+    }
+    
+  </details>
 
+**NSG Allowed Malicious Inbound Flows**
+<br/>This attack map shows the traffic allowed by a Network Security Group with all traffic allowed inbound
+<div style="text-align: center;">
+    <img src="https://github.com/user-attachments/assets/2d838a58-4729-431a-880f-6f1cd83079d6" alt="before controls" width="500" height="auto">
+</div>
+  <details>
+    <summary>JSON</summary>
 
+        {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let GeoIPDB = _GetWatchlist(\"geo_ipv4\");\nlet GeoIPDB_cities = _GetWatchlist(\"geo_ipv4_cities\");\nlet GeoIPDB_FULL = GeoIPDB | join kind = leftouter GeoIPDB_cities on geoname_id;\nlet MaliciousFlows = AzureNetworkAnalytics_CL \n| where FlowType_s == \"MaliciousFlow\"\n| order by TimeGenerated desc\n| project TimeGenerated, FlowType = FlowType_s, IpAddress = SrcIP_s, DestinationIpAddress = DestIP_s, DestinationPort = DestPort_d, Protocol = L7Protocol_s, NSGRuleMatched = NSGRules_s;\nMaliciousFlows\n| evaluate ipv4_lookup(GeoIPDB_FULL, IpAddress, network)\n| project TimeGenerated, FlowType, IpAddress, DestinationIpAddress, DestinationPort, Protocol, NSGRuleMatched, latitude, longitude, subdivision = subdivision_1_name, city = city_name, country = country_name, friendly_location = strcat(city_name, \" (\", country_name, \")\")",
+        "size": 3,
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "map",
+        "mapSettings": {
+          "locInfo": "LatLong",
+          "locInfoColumn": "country_name",
+          "latitude": "latitude",
+          "longitude": "longitude",
+          "sizeSettings": "city",
+          "sizeAggregation": "Count",
+          "opacity": 0.8,
+          "labelSettings": "friendly_location",
+          "legendMetric": "IpAddress",
+          "legendAggregation": "Count",
+          "itemColorSettings": {
+            "nodeColorField": "city",
+            "colorAggregation": "Count",
+            "type": "heatmap",
+            "heatmapPalette": "greenRed"
+          }
+        }
+      },
+      "name": "query - 0"
+    }
+    
+  </details>
 
 
 
